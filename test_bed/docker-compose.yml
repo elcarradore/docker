@@ -1,0 +1,96 @@
+version: '3.9'
+
+services:
+
+  pythonapp1:
+      container_name: pythonapp1
+      image: pythonapp1
+      hostname: pythonapp1
+      build:
+        context: python1
+      environment:
+        - PG_USER=postgres
+        - PG_PASSWORD=postgres
+        - PG_HOST=db
+        - PG_DATABASE=students
+        - PG_PORT=5432
+      ports:
+        - 8080:80
+      depends_on: 
+        - db
+      restart: unless-stopped
+      networks:
+              test_net:
+                      ipv4_address: 172.16.50.2
+
+
+
+  pythonapp2:
+      container_name: pythonapp2
+      image: pythonapp2
+      hostname: pythonapp2
+      build:
+        context: python2
+      environment:
+        - PG_USER=postgres
+        - PG_PASSWORD=postgres
+        - PG_HOST=db
+        - PG_DATABASE=students
+        - PG_PORT=5432
+      ports:
+          - 8081:80
+      depends_on: 
+          - db
+      restart: unless-stopped
+      networks:
+              test_net:
+                      ipv4_address: 172.16.50.3
+
+
+  db:
+      container_name: db
+      image: postgres:12
+      hostname: db
+      environment:
+          - POSTGRES_USER=postgres
+          - POSTGRES_PASSWORD=postgres
+          - POSTGRES_DB=students
+      volumes:
+          - pgdata:/var/lib/postgresql/data
+      ports: 
+        - 5432:5432
+      restart: unless-stopped
+      networks:
+              test_net:
+                      ipv4_address: 172.16.50.4
+
+
+  haproxy:
+      container_name: haproxy
+      hostname: haproxy
+      build:
+          context: haproxy
+      volumes:
+        - haproxydata:/usr/local/etc/haproxy
+      ports:
+        - 80:80
+      depends_on:
+        - pythonapp1
+      restart: unless-stopped
+      networks:
+              test_net:
+                      ipv4_address: 172.16.50.5
+
+
+
+networks:
+    test_net:
+            ipam:
+                    driver: default 
+                    config:
+                        - subnet: 172.16.50.0/24 
+
+
+volumes:
+    pgdata: {}
+    haproxydata: {}
